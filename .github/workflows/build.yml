@@ -6,6 +6,7 @@ on:
       - dev
       - beta
 
+jobs:
   build-and-release-windows:
     runs-on: windows-latest
     steps:
