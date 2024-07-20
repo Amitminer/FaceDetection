@@ -6,33 +6,6 @@ on:
       - dev
       - beta
 
-jobs:
-  build-and-release-linux:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        name: Checkout code
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y cmake git unzip
-          git clone https://github.com/microsoft/vcpkg.git
-          cd vcpkg
-          ./bootstrap-vcpkg.sh
-          ./vcpkg integrate install
-          ./vcpkg install opencv
-
-      - name: Build
-        run: |
-          chmod +x build.sh
-          ./build.sh
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: FaceDetection-linux
-          path: build/FaceDetection
-
   build-and-release-windows:
     runs-on: windows-latest
     steps:
@@ -48,36 +21,45 @@ jobs:
           .\vcpkg.exe integrate install
           .\vcpkg.exe install opencv
 
-      - name: Build
-        run: .\build.bat
 
+      - name: Build
+        run: |
+          mkdir build
+          cd build 
+          cmake .. -G "Visual Studio 17 2022" -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}\vcpkg\scripts\buildsystems\vcpkg.cmake
+          cd ..
+          cmake --build . --config Release
+          
       - uses: actions/upload-artifact@v4
         with:
           name: FaceDetection-windows
-          path: ${{ github.workspace }}\debug\FaceDetection.exe
+          path: ${{ github.workspace }}\Release\FaceDetection.exe
+          
+          name: FaceDetection-debug
+          path: ${{ github.workspace }}\Release\*
+
 
   create-release:
-    needs: [build-and-release-linux, build-and-release-windows]
+    needs: [build-and-release-windows]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: FaceDetection-linux
-          path: FaceDetection-linux
-
-      - uses: actions/download-artifact@v4
-        with:
           name: FaceDetection-windows
           path: FaceDetection-windows
+          
+          name: FaceDetection-debug
+          path: FaceDetection-debug
 
       - name: Create zip files
         run: |
           zip -rj FaceDetection-windows.zip FaceDetection-windows/
-          zip -rj FaceDetection-linux.zip FaceDetection-linux/
+          zip -rj FaceDetection-debug.zip FaceDetection-debug/
+
 
       - uses: ncipollo/release-action@v1.14.0
         with:
-          artifacts: "FaceDetection-linux.zip,FaceDetection-windows.zip"
+          artifacts: "FaceDetection-windows.zip, FaceDetection-debug.zip"
           token: ${{ secrets.PAT_TOKEN }}
           name: Build v${{ github.run_number }}
           tag: v${{ github.run_number }}
@@ -90,5 +72,6 @@ jobs:
       - uses: geekyeggo/delete-artifact@v5
         with:
           name: |
-            FaceDetection-linux
             FaceDetection-windows
+            FaceDetection-debug
+

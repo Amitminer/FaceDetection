@@ -4,7 +4,7 @@ setlocal
 REM Define the generator variable
 REM Visual Studio 17 2022 or MinGW Makefiles
 set "generator=Visual Studio 17 2022"
-set "toolchainPath=%dir%\vcpkg\scripts\buildsystems\vcpkg.cmake"
+set "toolchainPath=P:\AppData\Roaming\ProgrammingTools\vcpkg\scripts\buildsystems\vcpkg.cmake"
 REM Run CMake configuration for main project
 echo Running CMake configuration for main project...
 if not exist build (
