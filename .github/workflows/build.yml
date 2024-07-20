@@ -1,0 +1,94 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - dev
+      - beta
+
+jobs:
+  build-and-release-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        name: Checkout code
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake git unzip
+          git clone https://github.com/microsoft/vcpkg.git
+          cd vcpkg
+          ./bootstrap-vcpkg.sh
+          ./vcpkg integrate install
+          ./vcpkg install opencv
+
+      - name: Build
+        run: |
+          chmod +x build.sh
+          ./build.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FaceDetection-linux
+          path: build/FaceDetection
+
+  build-and-release-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        name: Checkout code
+
+      - name: Install dependencies
+        run: |
+          choco install cmake
+          git clone https://github.com/microsoft/vcpkg.git
+          cd vcpkg
+          .\bootstrap-vcpkg.bat
+          .\vcpkg.exe integrate install
+          .\vcpkg.exe install opencv
+
+      - name: Build
+        run: .\build.bat
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FaceDetection-windows
+          path: ${{ github.workspace }}\debug\FaceDetection.exe
+
+  create-release:
+    needs: [build-and-release-linux, build-and-release-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: FaceDetection-linux
+          path: FaceDetection-linux
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: FaceDetection-windows
+          path: FaceDetection-windows
+
+      - name: Create zip files
+        run: |
+          zip -rj FaceDetection-windows.zip FaceDetection-windows/
+          zip -rj FaceDetection-linux.zip FaceDetection-linux/
+
+      - uses: ncipollo/release-action@v1.14.0
+        with:
+          artifacts: "FaceDetection-linux.zip,FaceDetection-windows.zip"
+          token: ${{ secrets.PAT_TOKEN }}
+          name: Build v${{ github.run_number }}
+          tag: v${{ github.run_number }}
+          prerelease: true
+
+  cleanup:
+    needs: create-release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: geekyeggo/delete-artifact@v5
+        with:
+          name: |
+            FaceDetection-linux
+            FaceDetection-windows
