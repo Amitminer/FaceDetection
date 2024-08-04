@@ -42,12 +42,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: FaceDetection-windows
-          path: ${{ github.workspace }}/build/Release/FaceDetection.exe
+          path: ${{ github.workspace }}/Release/FaceDetection.exe
       - name: Upload Debug Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: FaceDetection-debug
-          path: ${{ github.workspace }}/build/Release/*
+          path: ${{ github.workspace }}/Release/*
 
   create-release:
     needs: [build-and-release-windows]
