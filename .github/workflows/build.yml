@@ -1,45 +1,53 @@
 name: Build and Release
-
 on:
   push:
     branches:
       - dev
       - beta
-
 jobs:
   build-and-release-windows:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
         name: Checkout code
-
+      - name: Cache vcpkg
+        uses: actions/cache@v3
+        with:
+          path: |
+            ${{ github.workspace }}/vcpkg
+            !${{ github.workspace }}/vcpkg/buildtrees
+            !${{ github.workspace }}/vcpkg/packages
+            !${{ github.workspace }}/vcpkg/downloads
+          key: ${{ runner.os }}-vcpkg-${{ hashFiles('**/vcpkg.json') }}
+          restore-keys: |
+            ${{ runner.os }}-vcpkg-
       - name: Install dependencies
         run: |
           choco install cmake
-          git clone https://github.com/microsoft/vcpkg.git
+          if (!(Test-Path vcpkg)) {
+            git clone https://github.com/microsoft/vcpkg.git
+            cd vcpkg
+            .\bootstrap-vcpkg.bat
+          }
           cd vcpkg
-          .\bootstrap-vcpkg.bat
           .\vcpkg.exe integrate install
-          .\vcpkg.exe install opencv
-
+          .\vcpkg.exe install opencv:x64-windows
       - name: Build
         run: |
           mkdir build
           cd build
           cmake .. -G "Visual Studio 17 2022" -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}\vcpkg\scripts\buildsystems\vcpkg.cmake
           cmake --build . --config Release
-
       - name: Upload Release Artifact
         uses: actions/upload-artifact@v4
         with:
           name: FaceDetection-windows
-          path: ${{ github.workspace }}\build\Release\FaceDetection.exe
-
+          path: ${{ github.workspace }}\Release\FaceDetection.exe
       - name: Upload Debug Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: FaceDetection-debug
-          path: ${{ github.workspace }}\build\Release\*
+          path: ${{ github.workspace }}\Release\*
 
   create-release:
     needs: [build-and-release-windows]
@@ -49,17 +57,14 @@ jobs:
         with:
           name: FaceDetection-windows
           path: FaceDetection-windows
-
       - uses: actions/download-artifact@v4
         with:
           name: FaceDetection-debug
           path: FaceDetection-debug
-
       - name: Create tar files
         run: |
           tar -czvf FaceDetection-windows.tar.gz -C FaceDetection-windows .
           tar -czvf FaceDetection-debug.tar.gz -C FaceDetection-debug .
-
       - uses: ncipollo/release-action@v1.14.0
         with:
           artifacts: "FaceDetection-windows.tar.gz,FaceDetection-debug.tar.gz"
