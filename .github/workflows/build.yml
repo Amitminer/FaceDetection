@@ -24,30 +24,30 @@ jobs:
       - name: Install dependencies
         run: |
           choco install cmake
-          if (!(Test-Path vcpkg)) {
-            git clone https://github.com/microsoft/vcpkg.git
-            cd vcpkg
+          if (!(Test-Path ${{ github.workspace }}/vcpkg)) {
+            git clone https://github.com/microsoft/vcpkg.git ${{ github.workspace }}/vcpkg
+            Push-Location ${{ github.workspace }}/vcpkg
             .\bootstrap-vcpkg.bat
+            Pop-Location
           }
-          cd vcpkg
-          .\vcpkg.exe integrate install
-          .\vcpkg.exe install opencv:x64-windows
+          ${{ github.workspace }}/vcpkg/vcpkg.exe integrate install
+          ${{ github.workspace }}/vcpkg/vcpkg.exe install opencv:x64-windows
       - name: Build
         run: |
           mkdir build
           cd build
-          cmake .. -G "Visual Studio 17 2022" -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}\vcpkg\scripts\buildsystems\vcpkg.cmake
+          cmake .. -G "Visual Studio 17 2022" -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
           cmake --build . --config Release
       - name: Upload Release Artifact
         uses: actions/upload-artifact@v4
         with:
           name: FaceDetection-windows
-          path: ${{ github.workspace }}\Release\FaceDetection.exe
+          path: ${{ github.workspace }}/build/Release/FaceDetection.exe
       - name: Upload Debug Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: FaceDetection-debug
-          path: ${{ github.workspace }}\Release\*
+          path: ${{ github.workspace }}/build/Release/*
 
   create-release:
     needs: [build-and-release-windows]
