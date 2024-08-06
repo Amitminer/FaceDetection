@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-project(FaceDetection VERSION 1.0.0)
+project(FaceDetection VERSION 1.0.1)
 
 # Set the C++ standard to C++17 and mark it as required
 set(CMAKE_CXX_STANDARD 17)
@@ -14,7 +14,7 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 # Define the executable target
 add_executable(${PROJECT_NAME}
     src/main.cpp        # Source file for the main application
-    src/frontalface.h   # Header file for the Haar Cascade data
+    src/frontalface.hpp   # Header file for the Haar Cascade data
 )
 
 # Link the executable with the OpenCV libraries
