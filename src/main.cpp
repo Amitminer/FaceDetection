@@ -1,6 +1,6 @@
 #include <opencv2/opencv.hpp>
 #include <iostream>
-#include "frontalface.h" //Header file for the Haar Cascade XML data
+#include "frontalface.hpp" //Header file for the Haar Cascade XML data
 
 /**
  * @brief Loads a Haar Cascade classifier from memory.
